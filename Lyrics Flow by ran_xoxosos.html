@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lyrics Flow</title>
+  <style>
+    :root {
+      --bg: #120202;
+      --panel: rgba(255, 244, 244, 0.08);
+      --line: #ffd7d7;
+      --accent: #ff4d4d;
+      --accent-2: #8b0000;
+      --shadow: rgba(0, 0, 0, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      font-family: "Georgia", "Times New Roman", serif;
+      color: var(--line);
+      background:
+        radial-gradient(circle at top left, rgba(255, 77, 77, 0.25), transparent 30%),
+        linear-gradient(135deg, var(--bg), #2a0404 70%, #4d0606);
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
+      background-size: 18px 18px;
+      opacity: 0.16;
+      pointer-events: none;
+    }
+
+    .card {
+      width: min(760px, 100%);
+      padding: 32px 28px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 22px;
+      background: var(--panel);
+      box-shadow: 0 20px 60px var(--shadow);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      transform-origin: center bottom;
+      transform: translateY(8px) scale(0.99);
+      animation: pop 540ms cubic-bezier(.2,.9,.26,1) 120ms both;
+    }
+
+    .title {
+      margin: 0 0 8px;
+      font-size: 1.1rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: #ffb3b3;
+    }
+
+    .subtitle {
+      margin: 0 0 22px;
+      font-size: 0.95rem;
+      color: #ff8a8a;
+      opacity: 0.9;
+    }
+
+    .footer {
+      margin-top: 24px;
+      text-align: right;
+      font-size: 0.9rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #ff8a8a;
+      opacity: 0.9;
+    }
+
+    .artwork {
+      margin-top: 18px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: flex-start;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      padding-top: 14px;
+      color: #ffdcdc;
+      opacity: 0.95;
+    }
+
+    .cover {
+      width: 84px;
+      height: 84px;
+      object-fit: cover;
+      border-radius: 6px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+      flex-shrink: 0;
+      background: linear-gradient(135deg,#6b0000,#ff4d4d);
+      display: inline-block;
+    }
+
+    .art-credit {
+      font-size: 0.84rem;
+      line-height: 1.25;
+      color: #ffdede;
+      opacity: 0.95;
+    }
+
+
+    .lyrics {
+      min-height: 380px;
+      font-size: 1.9rem;
+      line-height: 2.05;
+      white-space: pre-wrap;
+      color: #ffe2e2;
+      text-shadow: 0 0 10px rgba(255, 77, 77, 0.18);
+    }
+
+    .line {
+      margin: 6px 0;
+      opacity: 1;
+      transform: none;
+    }
+
+    .current {
+      opacity: 1;
+      transform: none;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 0.9ch;
+      height: 1.06em;
+      margin-left: 4px;
+      background: var(--accent);
+      border-radius: 2px;
+      animation: blink var(--beat, 800ms) steps(1) infinite;
+      box-shadow: 0 0 10px var(--accent);
+      vertical-align: text-bottom;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    @keyframes pop {
+      from { transform: translateY(18px) scale(0.96); opacity: 0; }
+      to   { transform: translateY(0) scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div id="lyrics" class="lyrics"></div>
+    <div class="footer">Merry Christmas, Please Don't Call</div>
+    <div class="footer" style="margin-top: 6px; font-size: 0.8rem; letter-spacing: 0.16em;">By The Bleachers</div>
+
+    <div class="artwork">
+      <div class="cover" aria-hidden="true"></div>
+      <div class="art-credit">
+        "Merry Christmas, Please Don't Call" — written and performed by<br>
+        <strong>JACK ANTONOFF</strong> and <strong>BLEACHERS</strong>
+        <div style="margin-top:6px; font-size:0.85rem; opacity:0.85;">ran_xoxosos</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const lines = [
+      "Just one ticket out of your heavy gaze",
+      "I want one ticket off of your carousel",
+      "I want one ticket out of your heavy gaze",
+      "I want one ticket off of your carousel",
+      "But you should know that I die slow",
+      "Running through the halls of your haunted home",
+      "And the toughest part is that we both know",
+      "What happened to you?",
+      "Why you're out on your own?",
+      "Merry Christmas, please don't call",
+      "Merry Christmas, I'm not yours at all",
+      "Merry Christmas, please don't call me"
+    ];
+
+    const el = document.getElementById("lyrics");
+    let lineIndex = 0;
+    let charIndex = 0;
+    const displayed = []; // holds last up to 4 completed lines
+    let finalAppended = false;
+
+    // Tempo settings: convert BPM to ms per beat and derive delays (aligned to 165 BPM)
+    const BPM = 165;
+    const beatMs = 60000 / BPM; // ms per beat
+    const subdivisions = 4; // 16th notes (chars per beat)
+    const charDelay = Math.max(20, Math.round(beatMs / subdivisions)); // ms per character (16th notes)
+    const linePauseBeats = 2; // pause length in beats after completing a line
+    const linePause = Math.round(beatMs * linePauseBeats);
+    const clearDelayBeats = 1; // clear after this many beats once 4 lines shown
+    const clearDelay = Math.round(beatMs * clearDelayBeats);
+    const startDelayBeats = 4; // startup delay measured in beats
+    const startDelay = Math.round(beatMs * startDelayBeats);
+
+    // expose beat duration to CSS for cursor animation
+    document.documentElement.style.setProperty('--beat', `${beatMs}ms`);
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    const transitionMs = 360; // ms used when waiting for timed line clears
+    let currentLineEl;
+
+    function createLine(text, isCurrent = false) {
+      const line = document.createElement('div');
+      line.className = isCurrent ? 'line current' : 'line';
+      if (isCurrent) {
+        line.innerHTML = `${escapeHtml(text)}<span class="cursor"></span>`;
+      } else {
+        line.textContent = text;
+      }
+      return line;
+    }
+
+    function renderCurrent(partial = '') {
+      el.innerHTML = '';
+      displayed.forEach(text => el.appendChild(createLine(text)));
+      currentLineEl = createLine(partial, true);
+      el.appendChild(currentLineEl);
+    }
+
+    function typeLine() {
+      if (lineIndex >= lines.length) {
+        if (!finalAppended) {
+          displayed.push('ran_xoxosos');
+          if (displayed.length > 4) displayed.shift();
+          renderCurrent('');
+          finalAppended = true;
+        }
+        return;
+      }
+
+      if (charIndex < lines[lineIndex].length) {
+        const partial = lines[lineIndex].slice(0, charIndex + 1);
+        if (!currentLineEl) renderCurrent(partial);
+        else currentLineEl.innerHTML = `${escapeHtml(partial)}<span class="cursor"></span>`;
+        charIndex++;
+        setTimeout(typeLine, charDelay);
+      } else {
+        const completedText = lines[lineIndex];
+        if (currentLineEl) {
+          currentLineEl.className = 'line';
+          currentLineEl.textContent = completedText;
+        }
+        displayed.push(completedText);
+        if (displayed.length > 4) {
+          displayed.shift();
+          if (el.firstChild) el.removeChild(el.firstChild);
+        }
+
+        lineIndex++;
+        charIndex = 0;
+        currentLineEl = createLine('', true);
+        el.appendChild(currentLineEl);
+
+        if (displayed.length === 4 && lineIndex < lines.length) {
+          setTimeout(() => {
+            displayed.length = 0;
+            renderCurrent('');
+          }, Math.max(clearDelay, transitionMs));
+        }
+
+        setTimeout(typeLine, linePause);
+      }
+    }
+
+    // start (aligned to BPM: startDelay beats)
+    renderCurrent('');
+    setTimeout(typeLine, startDelay);
+  </script>
+</body>
+</html> 
